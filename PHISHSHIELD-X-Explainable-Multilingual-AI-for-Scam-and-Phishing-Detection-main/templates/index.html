@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishShield X — Adaptive Threat Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e1a; --bg-navy: #0f2043;
+            --bg-card: rgba(17,24,39,0.85); --bg-card-solid: #111827;
+            --border: rgba(255,255,255,0.08); --border-hover: rgba(255,255,255,0.15);
+            --accent: #2563c9; --accent-light: #5790e6; --accent-glow: rgba(37,99,201,0.25);
+            --surface: #1a2236;
+            --safe: #22c55e; --low: #3b82f6; --suspicious: #f59e0b;
+            --high: #f97316; --critical: #ef4444;
+            --text: #f1f5f9; --text-sec: #94a3b8; --text-dim: #64748b;
+            --r-card: 1.5rem; --r-lg: 2rem; --r-pill: 62.5rem;
+            --ease: all 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Onest',system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+        a { color:var(--accent-light); text-decoration:none; }
+        button { cursor:pointer; font-family:inherit; }
+
+        /* ── NAV ── */
+        .nav { position:fixed; top:0; left:0; right:0; height:64px; background:rgba(10,14,26,0.75); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 5%; z-index:1000; }
+        .nav-brand { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; }
+        .nav-brand svg { width:24px; height:24px; color:var(--accent-light); }
+        .nav-title { font-size:1.15rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; }
+        .nav-title span { color:var(--accent-light); }
+        .nav-sub { font-size:0.7rem; color:var(--text-dim); margin-left:12px; padding-left:12px; border-left:1px solid var(--border); display:none; }
+        @media(min-width:768px){.nav-sub{display:block}}
+        .nav-badge { background:var(--surface); border:1px solid var(--border); padding:3px 10px; border-radius:var(--r-pill); font-size:0.7rem; font-weight:500; color:var(--accent-light); }
+
+        /* ── HERO ── */
+        .hero { padding:120px 5% 60px; background:linear-gradient(180deg,var(--bg-navy) 0%,var(--bg) 100%); text-align:center; position:relative; }
+        .hero::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 0%, rgba(37,99,201,0.12) 0%, transparent 60%); pointer-events:none; }
+        .hero-title { font-size:clamp(2rem,5vw,4rem); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.75rem; background:linear-gradient(135deg,#fff 0%,#a5b4fc 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; line-height:1.1; }
+        .hero-sub { font-size:clamp(0.9rem,1.8vw,1.15rem); color:var(--text-sec); margin-bottom:2.5rem; }
+
+        /* ── INPUT ── */
+        .input-wrap { max-width:780px; margin:0 auto; position:relative; z-index:10; }
+        .input-card { background:var(--bg-card); backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:var(--r-lg); padding:1.75rem; box-shadow:0 8px 32px rgba(0,0,0,0.3); text-align:left; transition:var(--ease); }
+        .input-card:hover { border-color:var(--border-hover); }
+        .input-lbl { display:block; font-size:0.8rem; font-weight:500; color:var(--text-sec); margin-bottom:0.75rem; letter-spacing:0.12em; text-transform:uppercase; }
+        .input-ta { width:100%; min-height:140px; background:var(--surface); border:1px solid var(--border); border-radius:1rem; padding:1.1rem; color:var(--text); font-family:inherit; font-size:0.95rem; resize:vertical; transition:var(--ease); margin-bottom:1.25rem; }
+        .input-ta:focus { outline:none; border-color:var(--accent-light); box-shadow:0 0 0 3px var(--accent-glow); }
+        .input-ta::placeholder { color:var(--text-dim); }
+        .input-row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; }
+        .input-info { font-size:0.7rem; color:var(--text-dim); }
+        .btn-analyze { background:linear-gradient(135deg,var(--accent),var(--accent-light)); color:#fff; border:none; padding:11px 28px; border-radius:var(--r-pill); font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.1em; display:inline-flex; align-items:center; gap:7px; transition:var(--ease); box-shadow:0 4px 12px rgba(37,99,201,0.3); }
+        .btn-analyze:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(37,99,201,0.4); }
+        .btn-analyze svg { width:15px; height:15px; transition:transform 0.3s; }
+        .btn-analyze:hover svg { transform:translateX(4px); }
+
+        /* ── RESULTS ── */
+        .results { padding:1.5rem 5% 3rem; max-width:1360px; margin:0 auto; }
+        .grid-3 { display:grid; grid-template-columns:1fr; gap:1.25rem; margin-bottom:1.25rem; }
+        @media(min-width:1024px){ .grid-3{grid-template-columns:repeat(3,1fr)} }
+        .grid-2 { display:grid; grid-template-columns:1fr; gap:1.25rem; margin-bottom:1.25rem; }
+        @media(min-width:768px){ .grid-2{grid-template-columns:1fr 1fr} }
+        .full { margin-bottom:1.25rem; }
+
+        /* ── CARD ── */
+        .card { background:var(--bg-card); backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:var(--r-lg); padding:1.75rem; box-shadow:0 8px 32px rgba(0,0,0,0.2); transition:var(--ease); animation:fadeUp 0.55s ease both; opacity:0; }
+        .card:hover { border-color:var(--border-hover); transform:translateY(-3px); box-shadow:0 12px 40px rgba(0,0,0,0.3); }
+        @keyframes fadeUp { to{opacity:1;transform:translateY(0)} }
+        .card:nth-child(1){animation-delay:.08s}.card:nth-child(2){animation-delay:.16s}.card:nth-child(3){animation-delay:.24s}
+        .card-hdr { display:flex; align-items:center; gap:10px; margin-bottom:1.25rem; padding-bottom:0.85rem; border-bottom:1px solid var(--border); }
+        .card-hdr svg { width:18px; height:18px; color:var(--text-sec); flex-shrink:0; }
+        .card-hdr-title { font-size:0.78rem; font-weight:700; color:var(--text-sec); letter-spacing:0.1em; text-transform:uppercase; }
+
+        /* ── THREAT GAUGE ── */
+        .threat-card { position:relative; overflow:hidden; }
+        .threat-accent { position:absolute; top:0; left:0; right:0; height:4px; }
+        .gauge-wrap { display:flex; flex-direction:column; align-items:center; padding:0.5rem 0; }
+        .gauge { width:180px; height:180px; position:relative; display:flex; align-items:center; justify-content:center; }
+        .gauge-svg { position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+        .gauge-bg { fill:none; stroke:var(--surface); stroke-width:11; }
+        .gauge-fill { fill:none; stroke-width:11; stroke-linecap:round; transition:stroke-dasharray 1.4s cubic-bezier(0.4,0,0.2,1); }
+        .gauge-score { font-size:3.8rem; font-weight:700; line-height:1; z-index:2; }
+        .gauge-label { font-size:1rem; font-weight:500; display:flex; align-items:center; justify-content:center; gap:6px; margin-top:0.75rem; }
+        .t-safe{color:var(--safe)}.t-low{color:var(--low)}.t-suspicious{color:var(--suspicious)}.t-high{color:var(--high)}.t-critical{color:var(--critical)}
+        .s-safe{stroke:var(--safe)}.s-low{stroke:var(--low)}.s-suspicious{stroke:var(--suspicious)}.s-high{stroke:var(--high)}.s-critical{stroke:var(--critical)}
+        .bg-safe{background:var(--safe)}.bg-low{background:var(--low)}.bg-suspicious{background:var(--suspicious)}.bg-high{background:var(--high)}.bg-critical{background:var(--critical)}
+        @keyframes pulseCrit{0%{box-shadow:0 0 0 0 rgba(239,68,68,0.35)}70%{box-shadow:0 0 0 18px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+        .pulse-crit{animation:pulseCrit 2s infinite;border-radius:50%}
+
+        /* ── BANNER ── */
+        .banner { border-radius:var(--r-lg); padding:1.25rem 1.5rem; margin-bottom:1.25rem; display:flex; align-items:center; gap:1rem; animation:fadeUp 0.4s ease both; }
+        .banner-safe { background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(34,197,94,0.04)); border:1px solid rgba(34,197,94,0.25); }
+        .banner-warn { background:linear-gradient(135deg,rgba(249,115,22,0.1),rgba(249,115,22,0.04)); border:1px solid rgba(249,115,22,0.25); }
+        .banner svg { flex-shrink:0; }
+        .banner strong { font-weight:600; }
+        .banner-title { font-weight:700; font-size:0.95rem; }
+        .banner-sub { color:var(--text-sec); font-size:0.85rem; }
+
+        /* ── HIGHLIGHTED MSG ── */
+        .msg-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg); padding:1.75rem; margin-bottom:1.25rem; animation:fadeUp 0.5s ease both; animation-delay:0.1s; opacity:0; }
+        .msg-label { font-size:0.7rem; font-weight:700; color:var(--text-dim); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:0.75rem; }
+        .msg-text { font-size:1rem; line-height:1.8; color:var(--text); word-break:break-word; padding:1rem; background:var(--surface); border-radius:1rem; border:1px solid var(--border); }
+        .msg-text mark.hl { font-weight:500; }
+        .msg-legend { display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:1rem; }
+        .legend-item { display:flex; align-items:center; gap:5px; font-size:0.72rem; font-weight:500; }
+        .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+        .norm-info { margin-top:0.75rem; padding:0.6rem 1rem; background:rgba(37,99,201,0.08); border-radius:0.75rem; border-left:3px solid var(--accent-light); font-size:0.78rem; color:var(--text-sec); }
+
+        /* ── ATTACK FLOW ── */
+        .flow-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg); padding:1.75rem; margin-bottom:1.25rem; animation:fadeUp 0.5s ease both; animation-delay:0.15s; opacity:0; }
+        .flow-wrap { display:flex; align-items:center; gap:0; overflow-x:auto; padding:0.5rem 0; }
+        .flow-step { display:flex; flex-direction:column; align-items:center; text-align:center; min-width:100px; flex-shrink:0; }
+        .flow-icon { width:48px; height:48px; border-radius:50%; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:1.4rem; margin-bottom:0.5rem; }
+        .flow-stage { font-size:0.78rem; font-weight:700; color:var(--text); }
+        .flow-desc { font-size:0.65rem; color:var(--text-dim); max-width:110px; margin-top:0.2rem; }
+        .flow-arrow { font-size:1.5rem; color:var(--text-dim); margin:0 0.25rem; flex-shrink:0; padding-bottom:2rem; }
+        .flow-empty { color:var(--text-dim); font-size:0.85rem; text-align:center; padding:1.5rem; }
+
+        /* ── KV LIST ── */
+        .kv-list { display:flex; flex-direction:column; gap:0.85rem; }
+        .kv-item { display:flex; justify-content:space-between; align-items:center; padding-bottom:0.6rem; border-bottom:1px solid rgba(255,255,255,0.04); }
+        .kv-item:last-child { border:none; padding:0; }
+        .kv-key { color:var(--text-sec); font-size:0.82rem; }
+        .kv-val { font-weight:500; text-align:right; font-size:0.85rem; }
+        .badge { display:inline-block; padding:2px 8px; border-radius:0.4rem; font-size:0.7rem; font-weight:500; background:var(--surface); border:1px solid var(--border); }
+        .badge-brand { background:rgba(239,68,68,0.1); color:var(--critical); border-color:rgba(239,68,68,0.2); }
+        .badge-safe { background:rgba(34,197,94,0.1); color:var(--safe); border-color:rgba(34,197,94,0.3); }
+
+        /* ── SE BARS ── */
+        .bar-list { display:flex; flex-direction:column; gap:1.1rem; }
+        .bar-hdr { display:flex; justify-content:space-between; margin-bottom:0.35rem; font-size:0.82rem; }
+        .bar-lbl { color:var(--text-sec); }
+        .bar-val { font-weight:700; }
+        .bar-track { height:6px; background:var(--surface); border-radius:3px; overflow:hidden; }
+        .bar-fill { height:100%; border-radius:3px; width:0; transition:width 1.4s cubic-bezier(0.4,0,0.2,1); }
+
+        /* ── EVIDENCE LIST ── */
+        .ev-list { display:flex; flex-direction:column; gap:0.85rem; }
+        .ev-item { display:flex; gap:10px; align-items:flex-start; background:rgba(255,255,255,0.02); padding:0.85rem; border-radius:0.75rem; border-left:3px solid var(--border); font-size:0.88rem; }
+        .ev-item.ev-red { border-left-color:var(--critical); }
+        .ev-item.ev-green { border-left-color:var(--safe); }
+        .ev-item.ev-blue { border-left-color:var(--accent-light); }
+        .ev-item.ev-amber { border-left-color:var(--suspicious); }
+        .ev-icon { flex-shrink:0; font-size:1rem; margin-top:1px; }
+
+        /* ── NEG EVIDENCE ── */
+        .neg-list { display:flex; flex-direction:column; gap:0.5rem; }
+        .neg-item { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--text-sec); padding:0.4rem 0; }
+        .neg-x { color:var(--safe); font-weight:700; font-size:1.1rem; }
+
+        /* ── URL LIST ── */
+        .url-item { background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:0.75rem; padding:0.85rem; margin-bottom:0.65rem; word-break:break-all; }
+        .url-hdr { display:flex; align-items:center; gap:7px; margin-bottom:0.35rem; }
+        .url-link { font-family:monospace; font-size:0.82rem; }
+        .url-flags { display:flex; flex-wrap:wrap; gap:4px; margin-top:0.35rem; }
+        .url-flag { font-size:0.65rem; padding:1px 6px; border-radius:4px; background:rgba(239,68,68,0.1); color:var(--critical); text-transform:uppercase; }
+
+        /* ── ADVERSARIAL TABLE ── */
+        .adv-table { width:100%; border-collapse:separate; border-spacing:0; font-size:0.82rem; }
+        .adv-table th { text-align:left; padding:0.7rem 0.85rem; color:var(--text-dim); font-weight:600; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em; border-bottom:1px solid var(--border); }
+        .adv-table td { padding:0.7rem 0.85rem; border-bottom:1px solid rgba(255,255,255,0.03); vertical-align:middle; }
+        .adv-table tr:last-child td { border:none; }
+        .adv-preview { font-family:monospace; font-size:0.75rem; color:var(--text-sec); max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .adv-badge { padding:3px 10px; border-radius:var(--r-pill); font-size:0.7rem; font-weight:600; display:inline-block; }
+        .robust-pass { background:rgba(34,197,94,0.12); color:var(--safe); border:1px solid rgba(34,197,94,0.2); padding:0.6rem 1rem; border-radius:0.75rem; font-size:0.82rem; font-weight:600; text-align:center; margin-top:0.85rem; }
+        .robust-fail { background:rgba(239,68,68,0.1); color:var(--critical); border:1px solid rgba(239,68,68,0.2); padding:0.6rem 1rem; border-radius:0.75rem; font-size:0.82rem; font-weight:600; text-align:center; margin-top:0.85rem; }
+
+        /* ── FEEDBACK ── */
+        .fb-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg); padding:1.5rem; text-align:center; margin-bottom:1.25rem; animation:fadeUp 0.5s ease both; animation-delay:0.3s; opacity:0; }
+        .fb-title { font-size:0.95rem; font-weight:600; margin-bottom:1rem; }
+        .fb-btns { display:flex; justify-content:center; gap:1rem; flex-wrap:wrap; }
+        .fb-btn { padding:10px 28px; border-radius:var(--r-pill); font-weight:700; font-size:0.8rem; border:1px solid var(--border); background:var(--surface); color:var(--text); transition:var(--ease); display:inline-flex; align-items:center; gap:6px; }
+        .fb-btn:hover { transform:translateY(-2px); }
+        .fb-correct:hover { border-color:var(--safe); background:rgba(34,197,94,0.1); color:var(--safe); }
+        .fb-incorrect:hover { border-color:var(--critical); background:rgba(239,68,68,0.1); color:var(--critical); }
+        .fb-thanks { color:var(--safe); font-weight:600; padding:0.5rem; }
+        .fb-stats { font-size:0.72rem; color:var(--text-dim); margin-top:0.6rem; }
+
+        /* ── STATS ── */
+        .stats-band { background:var(--bg-card-solid); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:1.75rem 5%; }
+        .stats-grid { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(2,1fr); gap:1.5rem; text-align:center; }
+        @media(min-width:768px){.stats-grid{grid-template-columns:repeat(4,1fr)}}
+        .stat-val { font-size:1.8rem; font-weight:700; margin-bottom:0.15rem; }
+        .stat-lbl { font-size:0.7rem; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.1em; }
+
+        /* ── FOOTER ── */
+        .footer { background:var(--bg-navy); padding:2.5rem 5%; text-align:center; border-top-left-radius:var(--r-lg); border-top-right-radius:var(--r-lg); margin-top:1.5rem; }
+        .footer p { color:var(--text-sec); font-size:0.8rem; margin-bottom:0.35rem; }
+        .footer-copy { color:var(--text-dim); font-size:0.7rem; }
+
+        /* ── EMPTY ── */
+        .empty { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:1.5rem 0; color:var(--text-sec); font-size:0.85rem; }
+        .empty svg { width:28px; height:28px; margin-bottom:0.65rem; opacity:0.4; }
+
+        /* ── SECTION LABEL ── */
+        .sec-label { font-size:0.68rem; font-weight:700; color:var(--text-dim); letter-spacing:0.14em; text-transform:uppercase; margin-bottom:1rem; display:flex; align-items:center; gap:6px; }
+        .sec-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+        /* ── MODE TABS ── */
+        .mode-tabs { display:inline-flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-pill); padding:4px; margin-bottom:1rem; }
+        .mode-tab { background:none; border:none; color:var(--text-sec); padding:6px 18px; border-radius:var(--r-pill); font-size:0.78rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; transition:var(--ease); }
+        .mode-tab.active { background:var(--accent); color:#fff; }
+        .mode-pane[hidden] { display:none; }
+        .input-url { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:1rem; padding:1rem 1.1rem; color:var(--text); font-family:monospace; font-size:0.95rem; margin-bottom:1.25rem; transition:var(--ease); }
+        .input-url:focus { outline:none; border-color:var(--accent-light); box-shadow:0 0 0 3px var(--accent-glow); }
+        .form-error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; border-radius:0.75rem; padding:0.6rem 1rem; font-size:0.85rem; margin-bottom:1rem; }
+
+        /* ── EVIDENCE SOURCE TAGS ── */
+        .src-tag { display:inline-block; font-size:0.6rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:1px 7px; border-radius:var(--r-pill); margin-right:6px; vertical-align:1px; border:1px solid; white-space:nowrap; }
+        .src-model { color:#c4b5fd; border-color:rgba(167,139,250,0.4); background:rgba(167,139,250,0.08); }
+        .src-rules { color:#fcd34d; border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.08); }
+        .src-url-analysis { color:#67e8f9; border-color:rgba(6,182,212,0.4); background:rgba(6,182,212,0.08); }
+        .src-external { color:var(--text-sec); border-color:var(--border); }
+
+        /* ── URL ANALYSIS ── */
+        .contrib { display:grid; grid-template-columns:minmax(0,1fr) 70px; gap:0.3rem 0.75rem; align-items:center; font-size:0.82rem; margin-bottom:0.6rem; }
+        .contrib-lbl { color:var(--text-sec); }
+        .contrib-lbl strong { color:var(--text); font-weight:500; }
+        .contrib-val { text-align:right; font-family:monospace; font-size:0.78rem; }
+        .contrib-track { grid-column:1 / -1; height:5px; background:var(--surface); border-radius:3px; overflow:hidden; }
+        .contrib-fill { height:100%; border-radius:3px; }
+        .sub-hdr { font-size:0.7rem; font-weight:700; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase; margin:1rem 0 0.6rem; }
+        .sub-hdr:first-child { margin-top:0; }
+        .note { font-size:0.75rem; color:var(--text-dim); margin-top:0.85rem; line-height:1.5; }
+        .breakdown { width:100%; border-collapse:collapse; font-size:0.82rem; }
+        .breakdown td, .breakdown th { padding:0.55rem 0.4rem; border-bottom:1px solid rgba(255,255,255,0.04); text-align:left; }
+        .breakdown th { color:var(--text-dim); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; font-weight:600; }
+        .breakdown td.num, .breakdown th.num { text-align:right; font-family:monospace; }
+        .sev { font-size:0.62rem; font-weight:700; text-transform:uppercase; padding:1px 7px; border-radius:4px; margin-left:6px; }
+        .sev-high { background:rgba(239,68,68,0.12); color:var(--critical); }
+        .sev-medium { background:rgba(245,158,11,0.12); color:var(--suspicious); }
+        .sev-low { background:rgba(59,130,246,0.12); color:var(--low); }
+        .url-summary { font-size:0.95rem; line-height:1.7; }
+        .url-score-line { font-size:0.72rem; color:var(--text-dim); margin-top:0.35rem; font-family:monospace; }
+        .btn-mini { background:var(--surface); border:1px solid var(--border); color:var(--accent-light); font-size:0.68rem; font-weight:600; padding:3px 10px; border-radius:var(--r-pill); margin-top:0.5rem; }
+        .btn-mini:hover { border-color:var(--accent-light); }
+
+        /* ── RESPONSIVE ── */
+        @media(max-width:640px) {
+            .hero { padding:100px 4% 40px; }
+            .results { padding:1rem 3% 2rem; }
+            .card { padding:1.25rem; }
+            .flow-step { min-width:80px; }
+            .adv-preview { max-width:120px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <span class="nav-title">Phish<span>Shield</span> X</span>
+        <span class="nav-sub">Adaptive Threat Intelligence Engine</span>
+    </a>
+    <span class="nav-badge">v2.0</span>
+</nav>
+
+<!-- ═══ HERO + INPUT ═══ -->
+<section class="hero">
+    <h1 class="hero-title">Detect. Explain. Protect.</h1>
+    <p class="hero-sub">Multilingual AI that catches what others miss — and tells you exactly why.</p>
+    <div class="input-wrap">
+        <div class="mode-tabs" role="tablist">
+            <button type="button" class="mode-tab {% if mode != 'url' %}active{% endif %}" data-mode="message" role="tab">Message</button>
+            <button type="button" class="mode-tab {% if mode == 'url' %}active{% endif %}" data-mode="url" role="tab">URL</button>
+            <button type="button" class="mode-tab" data-mode="feed" role="tab">Threat Feed</button>
+        </div>
+        {% if error %}<div class="form-error" role="alert">{{ error }}</div>{% endif %}
+
+        <form action="/analyze" method="POST" class="input-card mode-pane" data-pane="message" {% if mode == 'url' %}hidden{% endif %}>
+            <label class="input-lbl" for="message-input">Paste suspicious message</label>
+            <textarea id="message-input" name="message" class="input-ta" maxlength="{{ max_message_chars }}" placeholder="Paste an SMS, email, WhatsApp message, or any suspicious text…" required>{{ user_input if user_input else '' }}</textarea>
+            <div class="input-row">
+                <span class="input-info">20+ languages · Code-mixed text · Adversarial normalization · Links analysed by the URL engine</span>
+                <button type="submit" class="btn-analyze">
+                    Analyze Threat
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+            </div>
+        </form>
+
+        <form action="/analyze-url" method="POST" class="input-card mode-pane" data-pane="url" {% if mode != 'url' %}hidden{% endif %}>
+            <label class="input-lbl" for="url-input">Check a URL</label>
+            <input id="url-input" name="url" type="text" class="input-url" maxlength="{{ max_url_length }}" autocomplete="off" spellcheck="false" placeholder="https://example.com/login" value="{{ url_input if url_input else '' }}" required>
+            <div class="input-row">
+                <span class="input-info">URL model + rule-based indicators + live threat intelligence (if configured) · The link is never opened</span>
+                <button type="submit" class="btn-analyze">
+                    Analyze URL
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+            </div>
+        </form>
+
+        <div class="input-card mode-pane" data-pane="feed" hidden>
+            <label class="input-lbl">Latest threat intelligence</label>
+            <p class="input-info" style="margin-bottom:1rem">Newest URLs collected by the threat-intel service, each scored by PhishShield.
+                Fetched by this server, not your browser. URLs are shown defanged (hxxp, [.]) so they cannot be clicked.</p>
+            <div class="input-row" style="margin-bottom:1rem">
+                <span class="input-info" id="feed-status">Not loaded yet.</span>
+                <button type="button" class="btn-analyze" id="feed-load">Load latest</button>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="breakdown" id="feed-table" hidden>
+                    <thead><tr><th>URL (defanged)</th><th>Source</th><th>Threat type</th><th>First seen</th><th class="num">PhishShield</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if result_ready %}
+<!-- ═══════════════ RESULTS ═══════════════ -->
+<section class="results" id="results">
+
+    <!-- ── BANNER ── -->
+    {% if legit and legit.is_legitimate %}
+    <div class="banner banner-safe">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--safe)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div>
+            <div class="banner-title" style="color:var(--safe)">✅ Legitimate Message Detected</div>
+            <div class="banner-sub">Standard <strong>{{ legit.category }}</strong> — not a scam or phishing attempt.</div>
+        </div>
+    </div>
+    {% elif score > 60 %}
+    <div class="banner banner-warn">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--critical)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+            <div class="banner-title" style="color:var(--critical)">{{ risk.icon }} {{ risk.label }} — Likely {{ intent.intent }}</div>
+            <div class="banner-sub">Multiple threat signals detected. Do not interact with this message.</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── SECTION: THREAT ASSESSMENT ── -->
+    <div class="sec-label">Threat Assessment</div>
+    <div class="grid-3">
+        <!-- THREAT GAUGE -->
+        <div class="card threat-card">
+            <div class="threat-accent bg-{{ risk.class }}"></div>
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span class="card-hdr-title">Risk Score</span>
+            </div>
+            <div class="gauge-wrap">
+                <div class="gauge {% if risk.class == 'critical' %}pulse-crit{% endif %}">
+                    <svg class="gauge-svg" viewBox="0 0 100 100">
+                        <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                        <circle class="gauge-fill s-{{ risk.class }}" cx="50" cy="50" r="40" stroke-dasharray="0 251.2" data-score="{{ score }}"/>
+                    </svg>
+                    <div class="gauge-score t-{{ risk.class }}">{{ score }}</div>
+                </div>
+                <div class="gauge-label t-{{ risk.class }}">{{ risk.icon }} {{ risk.label }}</div>
+            </div>
+        </div>
+
+        <!-- LANGUAGE & INTENT -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span class="card-hdr-title">Language & Intent</span>
+            </div>
+            <div class="kv-list">
+                <div class="kv-item"><span class="kv-key">Language</span><span class="kv-val">{{ lang.name }} ({{ lang.code }})</span></div>
+                <div class="kv-item"><span class="kv-key">Code-Mixed</span><span class="kv-val">{% if lang.code_mixed %}<span class="badge" style="color:var(--suspicious);border-color:rgba(245,158,11,0.3)">Yes</span>{% else %}<span class="badge badge-safe">No</span>{% endif %}</span></div>
+                <div class="kv-item"><span class="kv-key">Attack Pattern</span><span class="kv-val" style="color:{% if intent.is_legit_intent %}var(--safe){% else %}var(--suspicious){% endif %}">{{ intent.intent }}</span></div>
+                <div class="kv-item"><span class="kv-key">Confidence</span><span class="kv-val">{{ intent.confidence }}%</span></div>
+                {% if lang.translation_note %}<div class="kv-item"><span class="kv-key">Translation</span><span class="kv-val" style="color:var(--text-dim);font-size:0.75rem">{{ lang.translation_note }}</span></div>
+                {% elif lang.translated %}<div class="kv-item"><span class="kv-key">Translation</span><span class="kv-val">Translated to English</span></div>{% endif %}
+                <div class="kv-item"><span class="kv-key">SMS Spam Model</span><span class="kv-val">{% if ml_signal %}{{ (ml_proba * 100)|round(1) }}%{% else %}<span title="None of the message's words are in the classifier's English vocabulary" style="color:var(--text-dim)">no signal</span>{% endif %}</span></div>
+                {% if brands %}
+                <div class="kv-item" style="flex-direction:column;align-items:flex-start;gap:0.4rem;border:none">
+                    <span class="kv-key">Brands Detected</span>
+                    <div>{% for b in brands %}
+                        {% if b.get('is_legitimate_mention') %}<span class="badge badge-safe" style="margin:2px">{{ b.name }} ✓</span>
+                        {% else %}<span class="badge badge-brand" style="margin:2px">{{ b.name }} ⚠</span>{% endif %}
+                    {% endfor %}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SOCIAL ENGINEERING -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12V2.5c5 0 9.5 4.5 9.5 9.5z"/></svg>
+                <span class="card-hdr-title">Social Engineering</span>
+            </div>
+            <div class="bar-list">
+                {% for tactic, pct in se.items() %}
+                <div>
+                    <div class="bar-hdr">
+                        <span class="bar-lbl">{{ tactic }}</span>
+                        <span class="bar-val" style="color:{% if pct<=40 %}var(--safe){% elif pct<=75 %}var(--suspicious){% else %}var(--critical){% endif %}">{{ pct }}%</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="background:{% if pct<=40 %}var(--safe){% elif pct<=75 %}var(--suspicious){% else %}var(--critical){% endif %}" data-w="{{ pct }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SECTION: MESSAGE ANALYSIS ── -->
+    <div class="sec-label">Evidence-Based Analysis</div>
+
+    <!-- HIGHLIGHTED MESSAGE -->
+    <div class="msg-card">
+        <div class="msg-label">Analyzed Message {% if norm_transforms %}· <span style="color:var(--accent-light)">{{ norm_transforms|length }} normalization(s) applied</span>{% endif %}</div>
+        <div class="msg-text">{{ highlighted_html|safe }}</div>
+        {% if highlights %}
+        <div class="msg-legend">
+            {% for cat in ['urgency','threat','credential_request','financial','reward','impersonation','action_request'] %}
+            {% set items = highlights|selectattr('category','equalto',cat)|list %}
+            {% if items|length > 0 %}
+            {% set s = items[0] %}
+            <span class="legend-item" style="color:{{ s.color }}">
+                <span class="legend-dot" style="background:{{ s.color }}"></span>
+                {{ s.label }} ({{ items|length }})
+            </span>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if norm_transforms %}
+        <div class="norm-info">
+            <strong>Adversarial normalization:</strong>
+            {% for t in norm_transforms %}{{ t }}{% if not loop.last %} · {% endif %}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ATTACK FLOW -->
+    {% if attack_flow %}
+    <div class="flow-card">
+        <div class="msg-label">Attack Flow — {{ attack_flow|length }} stages detected</div>
+        <div class="flow-wrap">
+            {% for step in attack_flow %}
+            <div class="flow-step">
+                <div class="flow-icon">{{ step.icon }}</div>
+                <div class="flow-stage">{{ step.stage }}</div>
+                <div class="flow-desc">{{ step.desc }}</div>
+            </div>
+            {% if not loop.last %}<div class="flow-arrow">→</div>{% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── SECTION: INTELLIGENCE ── -->
+    <div class="sec-label">Intelligence Details</div>
+    <div class="grid-2">
+        <!-- EVIDENCE / NEG EVIDENCE -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span class="card-hdr-title">{% if score <= 20 %}Why This Is Safe{% else %}Threat Evidence{% endif %}</span>
+            </div>
+            {% if score <= 20 and neg_evidence %}
+            <div class="neg-list">
+                {% for item in neg_evidence %}
+                <div class="neg-item"><span class="neg-x">✗</span> {{ item }}</div>
+                {% endfor %}
+            </div>
+            {% elif evidence %}
+            <div class="ev-list">
+                {% for e in evidence %}
+                <div class="ev-item {% if e.icon in ['✅','📋'] %}ev-green{% elif e.icon == '🔍' %}ev-amber{% else %}ev-red{% endif %}">
+                    <span class="ev-icon">{{ e.icon }}</span>
+                    <span>{% if e.source %}<span class="src-tag src-{{ e.source }}">{{ e.source|replace('-', ' ') }}</span>{% endif %}{{ e.text }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="note"><span class="src-tag src-model">model</span> output of a trained classifier ·
+                <span class="src-tag src-rules">rules</span> hand-written keyword / pattern rules ·
+                <span class="src-tag src-url-analysis">url analysis</span> URL model + URL rules combined</div>
+            {% else %}
+            <div class="empty"><span class="text-dim">No explicit threat evidence found.</span></div>
+            {% endif %}
+        </div>
+
+        <!-- URL INTELLIGENCE -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span class="card-hdr-title">URL Intelligence</span>
+            </div>
+            {% if url_info and url_info.count > 0 %}
+                {% for u in url_info.urls %}
+                <div class="url-item">
+                    <div class="url-hdr">
+                        {% if u.suspicious %}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--critical)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        {% else %}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--safe)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        {% endif %}
+                        <span class="url-link">{{ u.url }}</span>
+                    </div>
+                    <div class="url-flags">{% for f in u.flags %}<span class="url-flag">{{ f }}</span>{% endfor %}</div>
+                    {% if u.heuristic_score is not none %}
+                    <div class="url-score-line">risk {{ u.risk }}/100 ({{ u.risk_label }})
+                        · model {% if u.model_probability is not none %}{{ (u.model_probability * 100)|round|int }}%{% else %}n/a{% endif %}
+                        · rules {{ u.heuristic_score }} pts</div>
+                    <form action="/analyze-url" method="POST" style="display:inline">
+                        <input type="hidden" name="url" value="{{ u.url }}">
+                        <button type="submit" class="btn-mini">Full URL explanation →</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+                <span>No URLs detected in message.</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ── SECTION: ROBUSTNESS & RECS ── -->
+    <div class="sec-label">Robustness & Recommendations</div>
+    <div class="grid-2">
+        <!-- ADVERSARIAL ROBUSTNESS -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span class="card-hdr-title">Adversarial Robustness</span>
+            </div>
+            <table class="adv-table">
+                <thead><tr><th>Variant</th><th>Preview</th><th>Score</th><th>Detection</th></tr></thead>
+                <tbody>
+                {% for vname in ['original','leet_speak','unicode','spacing'] %}
+                {% if adversarial.get(vname) %}
+                {% set v = adversarial[vname] %}
+                <tr>
+                    <td style="font-weight:600">{{ vname|replace('_',' ')|title }}</td>
+                    <td><span class="adv-preview">{{ v.text }}</span></td>
+                    <td style="font-weight:700">{{ v.score }}</td>
+                    <td><span class="adv-badge" style="{% if v.score<=20 %}background:rgba(34,197,94,0.1);color:var(--safe){% elif v.score<=40 %}background:rgba(59,130,246,0.1);color:var(--low){% elif v.score<=60 %}background:rgba(245,158,11,0.1);color:var(--suspicious){% elif v.score<=80 %}background:rgba(249,115,22,0.1);color:var(--high){% else %}background:rgba(239,68,68,0.1);color:var(--critical){% endif %}">{{ v.label }}</span></td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+            {% if adversarial.get('robust') %}
+            <div class="robust-pass">✅ Robust — Detection consistent across all adversarial variants</div>
+            {% else %}
+            <div class="robust-fail">⚠️ Evasion Risk — Some variants evaded detection</div>
+            {% endif %}
+        </div>
+
+        <!-- RECOMMENDATIONS -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                <span class="card-hdr-title">Recommended Action</span>
+            </div>
+            {% if recs %}
+            <div class="ev-list">
+                {% for r in recs %}
+                <div class="ev-item ev-blue">
+                    <span class="ev-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-light)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span>{{ r }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ── FEEDBACK ── -->
+    <div class="fb-card" id="fb-card">
+        <div class="fb-title">Was this analysis accurate?</div>
+        <div class="fb-btns" id="fb-btns">
+            <button class="fb-btn fb-correct" onclick="sendFeedback(true)">👍 Correct</button>
+            <button class="fb-btn fb-incorrect" onclick="sendFeedback(false)">👎 Incorrect</button>
+        </div>
+        <div id="fb-result" style="display:none"></div>
+        {% if feedback_stats and feedback_stats.total > 0 %}
+        <div class="fb-stats">Community feedback: {{ feedback_stats.total }} ratings · {{ feedback_stats.accuracy }}% marked correct</div>
+        {% endif %}
+    </div>
+
+</section>
+{% endif %}
+
+{% if url_result %}
+{% set ux = url_result.explanation %}
+{% set me = ux.model_evidence %}
+{% set he = ux.heuristic_evidence %}
+{% set sb = ux.score_breakdown %}
+{% set risk = url_result.risk %}
+<!-- ═══════════════ URL RESULTS ═══════════════ -->
+<section class="results" id="results">
+
+    {% if url_result.score > 60 %}
+    <div class="banner banner-warn">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--critical)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+            <div class="banner-title" style="color:var(--critical)">{{ risk.icon }} {{ risk.label }} — likely phishing URL</div>
+            <div class="banner-sub">Do not open this link or enter any information on the page.</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="sec-label">URL Risk Assessment</div>
+    <div class="grid-3">
+        <!-- GAUGE -->
+        <div class="card threat-card">
+            <div class="threat-accent bg-{{ risk.class }}"></div>
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span class="card-hdr-title">URL Risk Score</span>
+            </div>
+            <div class="gauge-wrap">
+                <div class="gauge {% if risk.class == 'critical' %}pulse-crit{% endif %}">
+                    <svg class="gauge-svg" viewBox="0 0 100 100">
+                        <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                        <circle class="gauge-fill s-{{ risk.class }}" cx="50" cy="50" r="40" stroke-dasharray="0 251.2" data-score="{{ url_result.score }}"/>
+                    </svg>
+                    <div class="gauge-score t-{{ risk.class }}">{{ url_result.score }}</div>
+                </div>
+                <div class="gauge-label t-{{ risk.class }}">{{ risk.icon }} {{ risk.label }}</div>
+            </div>
+        </div>
+
+        <!-- SUMMARY + PARSED URL -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span class="card-hdr-title">Summary</span>
+            </div>
+            <p class="url-summary">{{ ux.summary }}</p>
+            <div class="kv-list" style="margin-top:1rem">
+                <div class="kv-item"><span class="kv-key">Host</span><span class="kv-val url-link">{{ url_result.parsed.host_unicode }}</span></div>
+                <div class="kv-item"><span class="kv-key">Registered domain</span><span class="kv-val url-link">{{ url_result.parsed.registered_domain or '—' }}</span></div>
+                <div class="kv-item"><span class="kv-key">Scheme</span><span class="kv-val">{{ url_result.parsed.scheme }}{% if not url_result.parsed.scheme_provided %} (assumed){% endif %}</span></div>
+            </div>
+        </div>
+
+        <!-- SCORE BREAKDOWN -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span class="card-hdr-title">How the Score Was Calculated</span>
+            </div>
+            <table class="breakdown">
+                <thead><tr><th>Source</th><th class="num">Score</th><th class="num">Weight</th><th class="num">Points</th></tr></thead>
+                <tbody>
+                {% for c in sb.components %}
+                <tr><td><span class="src-tag src-{{ 'model' if c.source == 'model' else ('rules' if c.source == 'heuristic' else 'external') }}">{{ c.source }}</span></td>
+                    <td class="num">{{ c.score|round(1) }}</td><td class="num">{{ (c.normalized_weight * 100)|round|int }}%</td><td class="num">{{ c.points|round(1) }}</td></tr>
+                {% endfor %}
+                <tr><td style="color:var(--text-sec)">Weighted score</td><td></td><td></td><td class="num">{{ sb.weighted_score|round(1) }}</td></tr>
+                {% for a in sb.adjustments %}
+                <tr><td colspan="3" style="color:var(--suspicious);font-size:0.75rem">{{ a.reason }}</td><td class="num">→ {{ a.to }}</td></tr>
+                {% endfor %}
+                <tr><td style="font-weight:700">Final score</td><td></td><td></td><td class="num" style="font-weight:700">{{ sb.score }}</td></tr>
+                </tbody>
+            </table>
+            {% if not me.available %}<div class="note">Model weight is redistributed because the URL model is unavailable.</div>{% endif %}
+        </div>
+    </div>
+
+    <div class="sec-label">Why this score — {{ url_result.verdict.classification|replace('_', ' ') }}</div>
+    <div class="card" style="margin-bottom:1.25rem">
+        <div class="ev-list">
+            {% for r in url_result.verdict.reasons %}
+            <div class="ev-item {% if r.effect == 'raises' %}ev-red{% elif r.effect == 'lowers' %}ev-green{% else %}ev-blue{% endif %}"><span>
+                <span class="src-tag src-{{ {'threat_intelligence':'external','ml':'model','heuristic':'rules','score_rule':'url-analysis'}[r.category] }}">{{ {'threat_intelligence':'threat intel','ml':'ml','heuristic':'rules','score_rule':'score rule'}[r.category] }}</span>{{ r.text }}
+            </span></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="sec-label">Evidence — by source</div>
+    <div class="grid-2">
+        <!-- MODEL EVIDENCE -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/></svg>
+                <span class="card-hdr-title"><span class="src-tag src-model">model</span>Machine-Learning Evidence</span>
+            </div>
+            {% if me.available %}
+                <div class="kv-list" style="margin-bottom:0.5rem">
+                    <div class="kv-item"><span class="kv-key">Phishing probability</span><span class="kv-val" style="color:{% if me.probability >= 0.5 %}var(--critical){% else %}var(--safe){% endif %}">{{ (me.probability * 100)|round(1) }}%</span></div>
+                </div>
+                {% set all_c = me.toward_phishing + me.toward_legitimate %}
+                {% set max_c = (all_c|map(attribute='contribution')|map('abs')|max) if all_c else 1 %}
+                {% if me.toward_phishing %}
+                <div class="sub-hdr">Pushed toward phishing</div>
+                {% for c in me.toward_phishing %}
+                <div class="contrib">
+                    <span class="contrib-lbl">{{ c.label }}: <strong>{{ c.display_value }}</strong></span>
+                    <span class="contrib-val" style="color:var(--critical)">+{{ c.contribution|round(2) }}</span>
+                    <div class="contrib-track"><div class="contrib-fill" style="width:{{ (c.contribution|abs / max_c * 100)|round|int }}%;background:var(--critical)"></div></div>
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% if me.toward_legitimate %}
+                <div class="sub-hdr">Pushed toward legitimate</div>
+                {% for c in me.toward_legitimate %}
+                <div class="contrib">
+                    <span class="contrib-lbl">{{ c.label }}: <strong>{{ c.display_value }}</strong></span>
+                    <span class="contrib-val" style="color:var(--safe)">{{ c.contribution|round(2) }}</span>
+                    <div class="contrib-track"><div class="contrib-fill" style="width:{{ (c.contribution|abs / max_c * 100)|round|int }}%;background:var(--safe)"></div></div>
+                </div>
+                {% endfor %}
+                {% endif %}
+                <div class="note">{{ me.note }}
+                    {% if me.model and me.model.test_metrics %}<br>Model: {{ me.model.algorithm }} trained on {{ me.model.dataset_name }}. Held-out test: accuracy {{ (me.model.test_metrics.accuracy * 100)|round(1) }}%, precision {{ (me.model.test_metrics.precision * 100)|round(1) }}%, recall {{ (me.model.test_metrics.recall * 100)|round(1) }}%, ROC-AUC {{ me.model.test_metrics.roc_auc }} (n={{ me.model.test_metrics.n }}).{% endif %}</div>
+            {% else %}
+                <div class="empty"><span>{{ me.note }}</span></div>
+            {% endif %}
+        </div>
+
+        <!-- HEURISTIC EVIDENCE -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span class="card-hdr-title"><span class="src-tag src-rules">rules</span>Rule-Based Indicators · {{ he.score }} pts</span>
+            </div>
+            {% if he.indicators %}
+            <div class="ev-list">
+                {% for i in he.indicators %}
+                <div class="ev-item {% if i.severity == 'high' %}ev-red{% elif i.severity == 'medium' %}ev-amber{% else %}ev-blue{% endif %}">
+                    <span>
+                        <strong>{{ i.title }}</strong><span class="sev sev-{{ i.severity }}">{{ i.severity }} · +{{ i.points }}</span><br>
+                        <span style="color:var(--text-sec);font-size:0.82rem">{{ i.detail }}</span>
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if he.trusted_domain %}
+            <div class="ev-item ev-green" style="margin-top:0.85rem"><span class="ev-icon">✅</span><span>{{ he.trusted_domain_detail }}</span></div>
+            {% endif %}
+            {% if he.passed_checks %}
+            <div class="sub-hdr" style="margin-top:1rem">Checks passed</div>
+            <div class="neg-list">
+                {% for p in he.passed_checks %}<div class="neg-item"><span class="neg-x">✓</span> {{ p }}</div>{% endfor %}
+            </div>
+            {% endif %}
+            <div class="note">Rule points are fixed, expert-assigned weights (not learned from data). The rule score is their sum, capped at 100.</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- EXTERNAL THREAT INTEL -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span class="card-hdr-title"><span class="src-tag src-external">external</span>Threat Intelligence</span>
+            </div>
+            {% set tiv = url_result.verdict.threat_intelligence %}
+            <div class="kv-list" style="margin-bottom:0.75rem">
+                <div class="kv-item"><span class="kv-key">Status</span><span class="kv-val" style="color:{% if tiv.status == 'match' %}var(--critical){% elif tiv.status == 'host_match' %}var(--suspicious){% elif tiv.status == 'unavailable' %}var(--suspicious){% else %}var(--text-sec){% endif %}">
+                    {{ {'match':'MATCH FOUND','host_match':'HOST MATCH','no_match':'No match','unavailable':'Live threat intelligence unavailable','not_configured':'Not configured','not_checked':'Not checked'}[tiv.status] }}</span></div>
+            </div>
+            {% if ux.external_evidence.indicators %}
+            <div class="ev-list">
+                {% for t in ux.external_evidence.indicators %}
+                <div class="ev-item {% if t.verdict == 'malicious' %}ev-red{% else %}ev-amber{% endif %}"><span>
+                    <strong>{{ t.verdict|capitalize }}</strong> · {{ t.indicator_type }} match · confidence {{ (t.confidence * 100)|round|int }}%<br>
+                    <span style="color:var(--text-sec);font-size:0.82rem">{{ t.description }}</span><br>
+                    <span style="color:var(--text-dim);font-size:0.72rem">Confidence basis: {{ t.confidence_basis }}</span>
+                </span></div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty"><span>{{ ux.external_evidence.note or 'No findings from the configured source.' }}</span></div>
+            {% endif %}
+            {% if ux.external_evidence.error %}<div class="note" style="color:var(--suspicious)">Source error: {{ ux.external_evidence.error }}</div>{% endif %}
+        </div>
+
+        <!-- RECOMMENDATIONS + LIMITATIONS -->
+        <div class="card">
+            <div class="card-hdr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                <span class="card-hdr-title">Recommended Action</span>
+            </div>
+            <div class="ev-list">
+                {% for r in ux.recommendations %}
+                <div class="ev-item ev-blue"><span class="ev-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-light)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span><span>{{ r }}</span></div>
+                {% endfor %}
+            </div>
+            <div class="sub-hdr" style="margin-top:1.25rem">Limitations of this analysis</div>
+            <ul style="padding-left:1.1rem;color:var(--text-dim);font-size:0.78rem;line-height:1.6">
+                {% for l in ux.limitations %}<li>{{ l }}</li>{% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="fb-card" id="fb-card">
+        <div class="fb-title">Was this URL assessment accurate?</div>
+        <div class="fb-btns" id="fb-btns">
+            <button class="fb-btn fb-correct" onclick="sendFeedback(true)">👍 Correct</button>
+            <button class="fb-btn fb-incorrect" onclick="sendFeedback(false)">👎 Incorrect</button>
+        </div>
+        <div id="fb-result" style="display:none"></div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ═══ STATS ═══ -->
+<div class="stats-band">
+    <div class="stats-grid">
+        <div><div class="stat-val">20+</div><div class="stat-lbl">Languages</div></div>
+        <div><div class="stat-val">13</div><div class="stat-lbl">Message Modules</div></div>
+        <div title="Held-out test set, split by registered domain. See models/url_model_metrics.json">
+            <div class="stat-val">{% if url_model_metrics %}{{ (url_model_metrics.roc_auc)|round(2) }}{% else %}—{% endif %}</div>
+            <div class="stat-lbl">{% if url_model_metrics %}URL Model ROC-AUC (test){% else %}URL Model Not Trained{% endif %}</div>
+        </div>
+        <div title="Share of user ratings marked 'correct'. Not a measured detection rate.">
+            <div class="stat-val">
+                {% if feedback_stats and feedback_stats.total > 0 %}{{ feedback_stats.accuracy }}%{% else %}—{% endif %}
+            </div>
+            <div class="stat-lbl">{% if feedback_stats and feedback_stats.total > 0 %}User Agreement ({{ feedback_stats.total }} ratings){% else %}No User Ratings Yet{% endif %}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="footer">
+    <p>PhishShield X · Explainable Phishing Detection & Risk Scoring · Built with scikit-learn, NLP & Flask</p>
+    <p class="footer-copy">&copy; 2026 PhishShield X. All rights reserved.</p>
+</footer>
+
+<!-- ═══ JS ═══ -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Scroll to results
+    const r = document.getElementById('results');
+    if (r) setTimeout(() => r.scrollIntoView({behavior:'smooth',block:'start'}), 100);
+
+    // Animate gauge
+    const gf = document.querySelector('.gauge-fill');
+    if (gf) setTimeout(() => {
+        const s = parseInt(gf.dataset.score||'0');
+        const d = (251.2*s)/100;
+        gf.style.strokeDasharray = `${d} 251.2`;
+    }, 300);
+
+    // Animate bars
+    document.querySelectorAll('.bar-fill').forEach(b => {
+        setTimeout(() => { b.style.width = b.dataset.w || '0%'; }, 400);
+    });
+
+    // Message / URL mode tabs
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const mode = tab.dataset.mode;
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t === tab));
+            document.querySelectorAll('.mode-pane').forEach(p => { p.hidden = p.dataset.pane !== mode; });
+            const field = document.querySelector('.mode-pane[data-pane="' + mode + '"] textarea, .mode-pane[data-pane="' + mode + '"] input[type=text]');
+            if (field) field.focus();
+            if (mode === 'feed' && !feedLoaded) loadFeed();
+        });
+    });
+
+    // Latest threat intelligence: the browser only talks to PhishShield's own
+    // backend; the backend queries the threat-intel API. Data is inserted with
+    // textContent, never as HTML.
+    let feedLoaded = false;
+    const feedStatus = document.getElementById('feed-status');
+    const feedTable = document.getElementById('feed-table');
+    const td = (text, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = text; return c; };
+    function loadFeed() {
+        feedLoaded = true;
+        feedStatus.textContent = 'Loading…';
+        fetch('/api/threat-intel/latest?limit=15&analyze=true')
+            .then(r => r.json())
+            .then(d => {
+                const body = feedTable.querySelector('tbody');
+                body.textContent = '';
+                if (d.status !== 'ok') { feedTable.hidden = true; feedStatus.textContent = d.message || 'Unavailable.'; return; }
+                if (!d.items.length) { feedTable.hidden = true; feedStatus.textContent = 'The threat-intel service has no URLs yet.'; return; }
+                d.items.forEach(it => {
+                    const tr = document.createElement('tr');
+                    const urlCell = td(it.display_url); urlCell.style.fontFamily = 'monospace'; urlCell.style.fontSize = '0.75rem'; urlCell.style.wordBreak = 'break-all';
+                    const a = it.analysis || {};
+                    const score = a.score !== undefined ? a.score + ' · ' + a.risk.label : (a.error || '—');
+                    tr.append(urlCell, td(it.intel.sources.join(', ')), td(it.intel.threat_types.join(', ') || '—'),
+                              td((it.intel.first_seen || '').slice(0, 16).replace('T', ' ')), td(score, 'num'));
+                    body.append(tr);
+                });
+                feedTable.hidden = false;
+                feedStatus.textContent = 'Showing ' + d.count + ' of ' + d.pagination.total + ' collected URLs.';
+            })
+            .catch(() => { feedStatus.textContent = 'Could not load the threat feed.'; });
+    }
+    document.getElementById('feed-load').addEventListener('click', loadFeed);
+});
+
+{% if result_ready or url_result %}
+{% if url_result %}
+const FEEDBACK_PAYLOAD = {
+    analysis_id: {{ analysis_id|tojson }},
+    message: {{ url_result.url|tojson }},
+    score: {{ url_result.score }},
+    risk_label: {{ url_result.risk.label|tojson }},
+    attack_type: "URL analysis",
+    language: ""
+};
+{% else %}
+const FEEDBACK_PAYLOAD = {
+    analysis_id: {{ analysis_id|tojson }},
+    message: {{ user_input|tojson }},
+    score: {{ score }},
+    risk_label: {{ risk.label|tojson }},
+    attack_type: {{ intent.intent|tojson }},
+    language: {{ lang.name|tojson }}
+};
+{% endif %}
+function sendFeedback(isCorrect) {
+    const btns = document.getElementById('fb-btns');
+    const res = document.getElementById('fb-result');
+    btns.innerHTML = '<span style="color:var(--text-dim)">Sending…</span>';
+    fetch('/feedback', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(Object.assign({}, FEEDBACK_PAYLOAD, {is_correct: isCorrect}))
+    })
+    .then(r => r.json().then(d => ({ok: r.ok, d})))
+    .then(({ok, d}) => {
+        if (!ok) throw new Error(d.message);
+        btns.style.display='none';
+        res.style.display='block';
+        res.textContent = '';
+        const t = document.createElement('div'); t.className = 'fb-thanks';
+        t.textContent = (isCorrect?'👍 ':'👎 ') + d.message;
+        const s = document.createElement('div'); s.className = 'fb-stats';
+        s.textContent = 'Total ratings: ' + d.stats.total + ' · User agreement: ' + d.stats.accuracy + '%';
+        res.append(t, s);
+    })
+    .catch(() => {
+        btns.innerHTML='<span style="color:var(--critical)">Failed to send. Try again.</span>';
+    });
+}
+{% endif %}
+</script>
+</body>
+</html>

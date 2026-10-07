@@ -1,0 +1,134 @@
+{
+  "metadata": {
+    "trained_at": "2026-10-07T09:44:49Z",
+    "sklearn_version": "1.9.0",
+    "seed": 42,
+    "test_size": 0.2,
+    "dataset": {
+      "name": "Web page phishing detection (Hannousse & Yahiouche, 2021)",
+      "citation": "Hannousse, A. & Yahiouche, S. (2021). Web page phishing detection dataset, Mendeley Data v3, https://doi.org/10.17632/c2gw7fy2j4.3 (CC BY 4.0)",
+      "file": "data\\url_dataset.csv",
+      "sha256": "3c525623b1b7abe6ca2bcafd63368ec89174772e1067e81f29e6f96c09668c50",
+      "rows_in_file": 11430,
+      "rows_unparseable": 3,
+      "rows_conflicting_labels_dropped": 0,
+      "rows_duplicates_dropped": 14,
+      "rows_used": 11413,
+      "class_counts": {
+        "phishing": 5698,
+        "legitimate": 5715
+      },
+      "distinct_registered_domains": 7260
+    }
+  },
+  "feature_version": "1",
+  "feature_names": [
+    "host_length",
+    "query_length",
+    "subdomain_depth",
+    "host_hyphen_count",
+    "host_digit_ratio",
+    "url_digit_ratio",
+    "special_char_count",
+    "path_depth",
+    "query_param_count",
+    "host_entropy",
+    "longest_host_token",
+    "sensitive_word_count",
+    "brand_outside_domain",
+    "uses_https",
+    "has_ip_host",
+    "has_at_symbol",
+    "has_nonstandard_port",
+    "has_punycode",
+    "is_shortener",
+    "has_embedded_url",
+    "has_executable_ext",
+    "tld_length"
+  ],
+  "metrics": {
+    "test": {
+      "n": 2704,
+      "accuracy": 0.7885,
+      "precision": 0.8813,
+      "recall": 0.7521,
+      "f1": 0.8116,
+      "roc_auc": 0.8766,
+      "false_positive_rate": 0.1557,
+      "confusion_matrix": {
+        "tn": 900,
+        "fp": 166,
+        "fn": 406,
+        "tp": 1232
+      },
+      "threshold": 0.5
+    },
+    "train": {
+      "n": 8709,
+      "accuracy": 0.7709,
+      "precision": 0.7853,
+      "recall": 0.7,
+      "f1": 0.7402,
+      "roc_auc": 0.8505,
+      "false_positive_rate": 0.1671,
+      "confusion_matrix": {
+        "tn": 3872,
+        "fp": 777,
+        "fn": 1218,
+        "tp": 2842
+      },
+      "threshold": 0.5
+    },
+    "cross_validation": {
+      "folds": 5,
+      "grouped_by": "registered_domain",
+      "scoring": "roc_auc",
+      "mean": 0.8424,
+      "std": 0.03,
+      "best_params": {
+        "C": 0.1
+      }
+    },
+    "reference_gradient_boosting_test": {
+      "n": 2704,
+      "accuracy": 0.8136,
+      "precision": 0.9027,
+      "recall": 0.7759,
+      "f1": 0.8345,
+      "roc_auc": 0.8924,
+      "false_positive_rate": 0.1285,
+      "confusion_matrix": {
+        "tn": 929,
+        "fp": 137,
+        "fn": 367,
+        "tp": 1271
+      },
+      "threshold": 0.5,
+      "note": "Same features and split; shown only to quantify the accuracy cost of using an exactly-explainable linear model. This model is not saved or served."
+    },
+    "coefficients": {
+      "host_length": 0.8963,
+      "sensitive_word_count": 0.8309,
+      "query_length": 0.6799,
+      "host_digit_ratio": 0.6678,
+      "has_at_symbol": 0.6429,
+      "path_depth": 0.5274,
+      "special_char_count": -0.5248,
+      "is_shortener": 0.4475,
+      "url_digit_ratio": 0.4412,
+      "brand_outside_domain": 0.3305,
+      "tld_length": -0.3023,
+      "has_ip_host": 0.2665,
+      "uses_https": -0.2624,
+      "host_hyphen_count": 0.1702,
+      "longest_host_token": -0.1556,
+      "subdomain_depth": -0.1301,
+      "query_param_count": 0.116,
+      "has_embedded_url": 0.096,
+      "host_entropy": -0.0873,
+      "has_executable_ext": 0.0485,
+      "has_punycode": 0.0425,
+      "has_nonstandard_port": 0.0309
+    }
+  }
+}

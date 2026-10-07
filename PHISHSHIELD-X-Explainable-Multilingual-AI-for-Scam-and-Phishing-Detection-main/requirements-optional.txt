@@ -1,0 +1,5 @@
+# Zero-shot model (facebook/bart-large-mnli, ~1.6 GB download) used by the
+# message analyser for social-engineering and intent scores. Without it the
+# app uses its keyword-rule fallback.
+transformers>=4.30
+torch>=2.0

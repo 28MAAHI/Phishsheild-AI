@@ -1,0 +1,24 @@
+{
+  "trained_at": "2026-10-07T09:37:48Z",
+  "dataset": "SMS Spam Collection (emails.csv)",
+  "rows": {
+    "in_file": 5573,
+    "invalid_dropped": 1,
+    "duplicates_dropped": 415,
+    "used": 5157
+  },
+  "split": "80/20 stratified, split before upsampling; duplicates removed first",
+  "test": {
+    "n_test": 1032,
+    "accuracy": 0.969,
+    "precision_spam": 0.875,
+    "recall_spam": 0.875,
+    "f1_spam": 0.875,
+    "confusion_matrix": {
+      "tn": 888,
+      "fp": 16,
+      "fn": 16,
+      "tp": 112
+    }
+  }
+}
